@@ -10,6 +10,9 @@ from sklearn.model_selection import train_test_split
 from Vehicle_Detection.lesson_functions import *
 import time
 import pickle
+import collections
+import matplotlib.gridspec as gridspec
+
 
 import sys
 
@@ -53,7 +56,7 @@ print('Your function returned a count of',
 print('of size: ', data_info["image_shape"], ' and data type:',
       data_info["data_type"])
 
-'''
+
 # Just for fun choose random car / not-car indices and plot example images
 car_ind = np.random.randint(0, len(cars))
 notcar_ind = np.random.randint(0, len(notcars))
@@ -62,20 +65,7 @@ notcar_ind = np.random.randint(0, len(notcars))
 car_image = mpimg.imread(cars[car_ind])
 notcar_image = mpimg.imread(notcars[notcar_ind])
 
-# Plot the examples
-fig = plt.figure()
-plt.subplot(121)
-plt.imshow(car_image)
-plt.title('Example Car Image')
-plt.subplot(122)
-plt.imshow(notcar_image)
-plt.title('Example Not-car Image')
-fig.savefig('output_images/car_notcar')
-'''
 
-
-
-# TODO play with these values to see how your classifier
 # performs under different binning scenarios
 color_space = 'YCrCb' # Can be RGB, HSV, LUV, HLS, YUV, YCrCb
 orient = 9  # HOG orientations
@@ -88,6 +78,67 @@ spatial_feat = True # Spatial features on or off
 hist_feat = True # Histogram features on or off
 hog_feat = True # HOG features on or off
 #y_start_stop = [None, None] # Min and max in y to search in slide_window()
+
+def generate_visualization():
+    features_car, hog_ch1_car,spatial_features_car = extract_features_plot(car_image, color_space=color_space,
+                            spatial_size=spatial_size, hist_bins=hist_bins,
+                            orient=orient, pix_per_cell=pix_per_cell,
+                            cell_per_block=cell_per_block,
+                            hog_channel=0, spatial_feat=spatial_feat,
+                            hist_feat=hist_feat, hog_feat=hog_feat)
+
+    features_notcar, hog_ch1_notcar,spatial_features_nocar = extract_features_plot(notcar_image, color_space=color_space,
+                            spatial_size=spatial_size, hist_bins=hist_bins,
+                            orient=orient, pix_per_cell=pix_per_cell,
+                            cell_per_block=cell_per_block,
+                            hog_channel=0, spatial_feat=spatial_feat,
+                            hist_feat=hist_feat, hog_feat=hog_feat)
+    fig = plt.figure(figsize=(6, 9))
+    gs1 = gridspec.GridSpec(4, 4)
+    gs1.update(wspace=0.6, hspace=0.3)
+    plt.subplot(gs1[0])
+    plt.imshow(car_image[:,:,0],cmap='gray')
+    plt.title('Car CH-1')
+    plt.subplot(gs1[1])
+    plt.imshow(hog_ch1_car,cmap='gray')
+    plt.title('Car CH-1 HOG')
+    plt.subplot(gs1[2])
+    plt.imshow(notcar_image[:,:,0],cmap='gray')
+    plt.title('not Car CH-1')
+    plt.subplot(gs1[3])
+    plt.imshow(hog_ch1_notcar,cmap='gray')
+    plt.title('not Car CH-1 HOG')
+    i = 4
+    for j in range(0,3):
+        plt.subplot(gs1[4*j+i])
+        plt.imshow(car_image[:,:,j],cmap='gray')
+        plt.title('Car CH-'+str(j))
+        plt.subplot(gs1[4*j+1+i])
+        plt.imshow(features_car[:,:,j],cmap='gray')
+        plt.title('Car CH-'+str(j)+' Features')
+        plt.subplot(gs1[4*j+2+i])
+        plt.imshow(notcar_image[:,:,j],cmap='gray')
+        plt.title('not Car CH-'+str(j))
+        plt.subplot(gs1[4*j+3+i])
+        plt.imshow(features_notcar[:,:,j],cmap='gray')
+        plt.title('Car CH-'+str(j)+'Features')
+
+
+    fig.savefig('output_images/HOG_example')
+
+    # Plot the examples
+    fig = plt.figure()
+    plt.subplot(121)
+    plt.imshow(car_image)
+    plt.title('Example Car Image')
+    plt.subplot(122)
+    plt.imshow(notcar_image)
+    plt.title('Example Not-car Image')
+    fig.savefig('output_images/car_notcar')
+
+
+
+
 
 car_features = extract_features(cars, color_space=color_space,
                         spatial_size=spatial_size, hist_bins=hist_bins,
@@ -116,7 +167,7 @@ X_scaler = StandardScaler().fit(X)
 # Apply the scaler to X
 scaled_X = X_scaler.transform(X)
 
-'''
+
 # Plot an example of raw and scaled features
 car_ind = np.random.randint(0, len(cars))
 fig = plt.figure(figsize=(12, 4))
@@ -131,7 +182,6 @@ plt.plot(scaled_X[car_ind])
 plt.title('Normalized Features')
 fig.tight_layout()
 fig.savefig('output_images/Normalized Features')
-'''
 
 
 
