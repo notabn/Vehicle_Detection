@@ -8,6 +8,7 @@ from Vehicle_Detection.lesson_functions import *
 import glob
 from moviepy.editor import VideoFileClip
 from scipy.ndimage.measurements import label
+import collections
 
 dist_pickle = pickle.load(open("svc_pickle.p", "rb"))
 svc = dist_pickle["svc"]
@@ -81,7 +82,7 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
     # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
     window = pix_per_cell*pix_per_cell
     nblocks_per_window = (window // pix_per_cell) - cell_per_block + 1
-    cells_per_step = 2  # Instead of overlap, define how many cells to step
+    cells_per_step = 1  # Instead of overlap, define how many cells to step
     nxsteps = (nxblocks - nblocks_per_window) // cells_per_step
     nysteps = (nyblocks - nblocks_per_window) // cells_per_step
 
@@ -131,21 +132,19 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, ce
 
 
 def vehicle_detection_pipeline(img, plot=False):
-
-
     box_list = []
-    for scale in range(2, 5):
+    for scale in range(2, 6):
         bbox = find_cars(img, ystart, ystop, scale * 0.5, svc, X_scaler, orient, pix_per_cell, cell_per_block,
                          spatial_size,
                          hist_bins)
         box_list = box_list + bbox
-    # img = img.astype(np.float32) / 255
+
     heat = np.zeros_like(img[:, :, 0]).astype(np.float)
     # Add heat to each box in box list
     heat = add_heat(heat, box_list)
 
     # Apply threshold to help remove false positives
-    heat = apply_threshold(heat, 1)
+    heat = apply_threshold(heat, 2)
 
     # Visualize the heatmap when displaying
     heatmap = np.clip(heat, 0, 255)
@@ -155,7 +154,7 @@ def vehicle_detection_pipeline(img, plot=False):
 
     draw_img = draw_labeled_bboxes(np.copy(img), labels)
 
-    if plot :
+    if False :
         fig = plt.figure()
         plt.subplot(121)
         plt.imshow(draw_img)
@@ -167,15 +166,87 @@ def vehicle_detection_pipeline(img, plot=False):
 
     return draw_img
 
+
+
+class VehicleTracker:
+
+
+    def __init__(self,frame_size):
+        self.n_avg = 10
+        self.heatmap = np.zeros(frame_size)
+        #self.frames = collections.deque(maxlen=self.n_avg)
+        self.count = 0
+
+
+    def process_frame(self,frame):
+        box_list = []
+        for scale in range(2, 7):
+            bbox = find_cars(frame, ystart, ystop, scale * 0.5, svc, X_scaler, orient, pix_per_cell, cell_per_block,
+                             spatial_size,
+                             hist_bins)
+            box_list = box_list + bbox
+
+        heat = np.zeros_like(frame[:, :, 0]).astype(np.float)
+        # Add heat to each box in box list
+        heat= add_heat(heat, box_list)
+
+        #  using heatmap
+        new_frame_factor = 0.4
+        self.heatmap = new_frame_factor * heat + (1 - new_frame_factor) * self.heatmap
+
+        # Apply threshold to help remove false positives
+        self.heatmap = apply_threshold(self.heatmap, 2)
+
+        # Visualize the heatmap when displaying
+        self.heatmap = np.clip(self.heatmap, 0, 255)
+
+        # Find final boxes from heatmap using label function
+        labels = label(self.heatmap)
+
+        # using averaged frame
+        '''
+        nb_frames_avg = min(self.n_avg,len(self.frames))
+        self.frames.append(frame)
+        avg_frame = np.mean(np.array(self.frames)[-nb_frames_avg], axis=-1)
+        '''
+
+        proccessed_frame = draw_labeled_bboxes(np.copy(frame),labels)
+        self.count += 1
+        if False:
+            fig = plt.figure()
+            plt.subplot(121)
+            plt.imshow(proccessed_frame)
+            plt.title('Car Positions')
+            plt.subplot(122)
+            plt.imshow(self.heatmap, cmap='hot')
+            plt.title('Heat Map')
+            fig.tight_layout()
+            fig.savefig(str(self.count))
+
+        return proccessed_frame
+
+
+tracker = VehicleTracker((720,1280))
+
+
+detection_output = 'project_output.mp4'
+clip1 = VideoFileClip("project_video.mp4")
+white_clip = clip1.fl_image(tracker.process_frame)  # NOTE: this function expects color images!!
+
+white_clip.write_videofile(detection_output, audio=False)
+
 '''
+
+images = glob.glob('test_images/*.jpg')
+img = images[0]
+#for img in images[0]:
+img = mpimg.imread(img)
+draw_img = tracker.process_frame(img)
+
+
 images = glob.glob('test_images/*.jpg')
 
 for img in images:
     img = mpimg.imread(img)
     vehicle_detection_pipeline(img, plot=True)
 '''
-detection_output = 'project_output.mp4'
-clip1 = VideoFileClip("project_video.mp4")
-white_clip = clip1.fl_image(vehicle_detection_pipeline)  # NOTE: this function expects color images!!
-
-white_clip.write_videofile(detection_output, audio=False)
