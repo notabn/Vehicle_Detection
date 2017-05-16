@@ -16,7 +16,7 @@ The goals / steps of this project are the following:
 [image5]: ./output_images/bboxes_and_heat.png
 [image6]: ./output_images/labels_map.png
 [image7]: ./output_images/output_bboxes.png
-[video1]: ./project_video_output.mp4
+[video1]: ./project_output.mp4
 
 ---
 ###Writeup / README
@@ -87,7 +87,7 @@ Here's an example result showing the heatmap from a series of frames of video, t
 
 SVM classsifier prove to do a good job in detecting objects, considiring that also cars driving on the other side of the road were also idenfied. To deal with these false posives and also
 other parts of the image that were also detected, I increased the threshhold in the heat map and also average the heatmao over 10 frames. However if a false
-positive is detected over the 10 frames the average will fail.
+positive is detected over the 10 frames the average will fail. For some sitautions averagin over 10 frames seems too much and cars aren't detected anymore.
 To improve the robusness of the algorithm I would futher implement some sanity check on the size ratio of the bounding boxes.
 The object detection fails when the objects are futher away from the ego vehicle and so goging in the higher half plane of the image. A reason is that the sliding widwod search was don only in the lowwer half plane.
 Also a bigger dataset that includes samples with smaller objects and also a different classifier may improve the detection. 
