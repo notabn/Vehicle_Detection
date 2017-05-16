@@ -26,7 +26,7 @@ The goals / steps of this project are the following:
 
 ####1. Extracted HOG features from the training images
 
-The code for this step is contained in the first code cell of the IPython notebook (or in lines # through # of the file called `some_file.py`).  
+The code for this step is contained  in lines 1 through 149 of the file called `build_dataset.py`).  
 
 I started by reading in all the `vehicle` and `non-vehicle` images.  Here is an example of one of each of the `vehicle` and `non-vehicle` classes:
 
